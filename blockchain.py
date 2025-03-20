@@ -103,7 +103,7 @@ class Blockchain:
         self.create_block(proof=1, previous_hash='0', sender='N.A', receiver='N.A', file_hash='N.A')
 
     def replace_chain(self):
-    try:
+        try:
         response = requests.get(
             'https://file-storage-using-blockchain.onrender.com/get_chain', 
             timeout=5  # ⏳ Added timeout to prevent infinite waiting
