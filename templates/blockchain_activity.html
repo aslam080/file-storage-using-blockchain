@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #f4f7f6;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .container {
+        max-width: 700px;
+        margin: auto;
+    }
+
+    h2 {
+        color: #343a40;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        background-color: #fff;
+        transition: 0.3s;
+        margin-bottom: 20px;
+    }
+
+    .card:hover {
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .block-details {
+        font-size: 16px;
+    }
+
+    .block-details p {
+        margin: 5px 0;
+    }
+
+    .block-header {
+        font-weight: bold;
+        color: #007bff;
+        font-size: 18px;
+    }
+
+    .divider {
+        border-top: 2px solid #ddd;
+        margin: 10px 0;
+    }
+
+    .json-box {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 14px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+</style>
+
+<div class="container mt-5">
+    <h2>🔗 Blockchain Activity Log</h2>
+
+    {% if blockchain_logs %}
+        {% for block in blockchain_logs %}
+        <div class="card shadow-lg">
+            <p class="block-header">🆔 Block {{ block['index'] }}</p>
+            <div class="block-details">
+                <p>⏳ <b>Timestamp:</b> {{ block['timestamp'] }}</p>
+                <p>🔢 <b>Proof:</b> {{ block['proof'] }}</p>
+                <p>🛠 <b>Previous Hash:</b> <span class="json-box">{{ block['previous_hash'] }}</span></p>
+
+                <div class="divider"></div>
+
+                <p><b>📁 Transactions:</b></p>
+
+                {% if block['transactions'] %}
+                    {% for transaction in block['transactions'] %}
+                        <p>📤 <b>Sender:</b> {{ transaction['sender'] }}</p>
+                        <p>📥 <b>Receiver:</b> {{ transaction['receiver'] }}</p>
+                        <p>📁 <b>File Hash:</b> <span class="json-box">{{ transaction['file_hash'] }}</span></p>
+                        <p>👤 <b>Uploaded By:</b> {{ transaction['uploaded_by'] }}</p>
+                        <div class="divider"></div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-muted">🚫 No transactions available for this block.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <p class="text-center text-muted">📌 No blockchain activity found.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
