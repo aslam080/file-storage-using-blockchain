@@ -103,19 +103,19 @@ class Blockchain:
         self.create_block(proof=1, previous_hash='0', sender='N.A', receiver='N.A', file_hash='N.A')
 
     def replace_chain(self):
-        network = self.nodes
-        longest_chain = None
-        max_length = len(self.chain)
-        for node in network:
-            response = requests.get('https://file-storage-using-blockchain.onrender.com/get_chain')
-            if response.status_code == 200:
-                length = response.json()['length']
-                chain = response.json()['chain']
-                if length > max_length and self.is_chain_valid(chain):
-                    max_length = length
-                    longest_chain = chain
-        if longest_chain:
-            self.chain = longest_chain
-            self.save_chain()
+    try:
+        response = requests.get(
+            'https://file-storage-using-blockchain.onrender.com/get_chain', 
+            timeout=5  # ⏳ Added timeout to prevent infinite waiting
+        )
+        response.raise_for_status()  # ✅ Stop if request fails
+
+        chain = response.json()["chain"]
+        if len(chain) > len(self.chain):
+            self.chain = chain
             return True
+        return False
+
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ Blockchain Sync Error: {e}")
         return False
