@@ -12,7 +12,8 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.nodes = set()
-        self.nodes.add("127.0.0.1:5111")
+        RENDER_SERVER_URL = os.getenv("RENDER_SERVER_URL", "http://127.0.0.1:5111")  # Default to local
+        self.nodes.add(render_server_url)
 
         # Load blockchain from file if it exists
         self.load_chain()
