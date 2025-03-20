@@ -101,21 +101,20 @@ class Blockchain:
         """Creates the first block if the blockchain file is missing or corrupted."""
         print("🌱 Creating Genesis Block...")
         self.create_block(proof=1, previous_hash='0', sender='N.A', receiver='N.A', file_hash='N.A')
+    def replace_chain(self):  # ✅ Fixed indentation
+        try:
+            response = requests.get(
+                'https://file-storage-using-blockchain.onrender.com/get_chain', 
+                timeout=5  # ⏳ Added timeout to prevent infinite waiting
+            )
+            response.raise_for_status()  # ✅ Stop if request fails
 
-def replace_chain(self):
-    try:
-        response = requests.get(
-            'https://file-storage-using-blockchain.onrender.com/get_chain', 
-            timeout=5  # ⏳ Added timeout to prevent infinite waiting
-        )
-        response.raise_for_status()  # ✅ Stop if request fails
+            chain = response.json()["chain"]
+            if len(chain) > len(self.chain):
+                self.chain = chain
+                return True
+            return False  
 
-        chain = response.json()["chain"]
-        if len(chain) > len(self.chain):
-            self.chain = chain
-            return True
-        return False
-
-    except requests.exceptions.RequestException as e:
-        print(f"⚠️ Blockchain Sync Error: {e}")
-        return False
+        except requests.exceptions.RequestException as e:  # ✅ Correct indentation
+            print(f"⚠️ Blockchain Sync Error: {e}")
+            return False
