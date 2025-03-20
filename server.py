@@ -350,8 +350,8 @@ def retrieve_file():
 
 
     file_path = retrieve_from_hash(file_hash, file_key)
-    flash("✅ File downloaded successfully!", "success")
-    return redirect(url_for('download'))
+    return send_file(file_path, as_attachment=True)
+
 
 @app.route('/get_chain', methods = ['GET'])
 def get_chain():
