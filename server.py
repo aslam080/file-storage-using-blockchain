@@ -109,7 +109,7 @@ def hash_user_file(file_path, file_key):
 def retrieve_from_hash(file_hash, file_key):
     # Pinata Gateway URL
     url = f"https://gateway.pinata.cloud/ipfs/{file_hash}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=15) 
 
     if response.status_code == 200:
         file_path = os.path.join(app.config['DOWNLOAD_FOLDER'], file_hash)
