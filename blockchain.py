@@ -22,6 +22,13 @@ class Blockchain:
         # Load blockchain from file if it exists
         self.load_chain()
 
+        # 🔁 Sync blockchain with Render server if possible
+        synced = self.replace_chain()
+        if synced:
+            print("🔄 Blockchain synced with Render server.")
+        else:
+            print("ℹ️ Using local blockchain.")
+    
     def create_block(self, proof, previous_hash, sender, receiver, file_hash):
         block = {
             'index': len(self.chain) + 1,
