@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Blue Lock Storage</title>
+    <title>Blockchain decentralized Storage</title>
 
     <!-- Favicons -->
     <link href="static/img/favicon.png" rel="icon">
@@ -18,7 +18,7 @@
     <link href="static/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
     <link href="static/vendor/venobox/venobox.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+
     <style>
         body, html {
             font-family: 'Poppins', sans-serif;
@@ -27,6 +27,7 @@
             margin: 0;
             padding: 0;
         }
+
         #hero {
             background: transparent !important;
             min-height: 100vh;
@@ -36,8 +37,24 @@
             color: white;
             text-align: center;
         }
+
+        #instructions {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        #instructions h2 {
+            font-weight: 600;
+        }
+
         .container h1, .container h2 {
             color: white;
+        }
+
+        ul.list-unstyled li::before {
+            content: "📌 ";
+            margin-left: -1em;
+            margin-right: 0.5em;
         }
     </style>
 </head>
@@ -47,7 +64,7 @@
     <!-- ======= Header ======= -->
     <header id="header" class="fixed-top">
         <div class="container d-flex align-items-center">
-            <h1 class="logo mr-auto"><a href="index.html">Blue Lock Storage</a></h1>
+            <h1 class="logo mr-auto"><a href="index.html">Blockchain Decentralized Storage</a></h1>
             <nav class="nav-menu d-none d-lg-block">
                 <ul>
                     <li class="active"><a href="#header">Home</a></li>
@@ -74,6 +91,41 @@
             </div>
         </div>
     </section><!-- End Hero -->
+
+    <!-- ======= Instructions Section ======= -->
+    <section id="instructions" class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-4">📘 Welcome to Blockchain Decentralized storage</h2>
+            <p class="text-center mb-4">A secure and decentralized file-sharing platform using Blockchain and IPFS.</p>
+            <ul class="list-unstyled pl-4">
+                <li class="mb-3"><strong>🔐 Login / Register:</strong><br>
+                    New here? Click Register to create an account.<br>
+                    Already a user? Just Login with your credentials.
+                </li>
+                <li class="mb-3"><strong>📁 Upload a File:</strong><br>
+                    Go to the Upload section.<br>
+                    Choose your file — it will be AES-256 encrypted.<br>
+                    File gets stored on IPFS via Pinata, and backed up on Filebase.
+                </li>
+                <li class="mb-3"><strong>🧾 Blockchain Logging:</strong><br>
+                    Each upload is recorded on a blockchain.<br>
+                    Ensures immutability and audit trails.
+                </li>
+                <li class="mb-3"><strong>🧑‍💻 Admin Approval:</strong><br>
+                    Admin verifies and approves the download request.<br>
+                    Unauthorized downloads are rejected.
+                </li>
+                <li class="mb-3"><strong>⬇️ Download:</strong><br>
+                    Once approved, go to the Download page.<br>
+                    Enter your decryption key to retrieve your file.
+                </li>
+                <li class="mb-3"><strong>🔒 Security & Access:</strong><br>
+                    Only logged-in users can access uploads/downloads.<br>
+                    Your files are private and encrypted — even the admin can’t read them!
+                </li>
+            </ul>
+        </div>
+    </section><!-- End Instructions -->
 
     <!-- Vendor JS Files -->
     <script src="static/vendor/jquery/jquery.min.js"></script>
