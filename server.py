@@ -18,9 +18,10 @@ from auth import auth as auth_blueprint
 from flask_sqlalchemy import SQLAlchemy
 from database import db, DownloadRequest
 from flask import get_flashed_messages
-from datetime import datetime
+from datetime import datetime,timezone
 import json
 from flask import send_file
+import boto3
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,6 +29,9 @@ load_dotenv()
 PINATA_API_KEY = os.getenv("PINATA_API_KEY")
 PINATA_SECRET_API_KEY = os.getenv("PINATA_SECRET_API_KEY")
 PINATA_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS"
+FILEBASE_ACCESS_KEY = os.getenv("FILEBASE_ACCESS_KEY")
+FILEBASE_SECRET_KEY = os.getenv("FILEBASE_SECRET_KEY")
+FILEBASE_BUCKET_NAME = os.getenv("FILEBASE_BUCKET_NAME")
 
 app = Flask(__name__, static_folder='static')
 
@@ -59,6 +63,12 @@ Session(app)
 app.register_blueprint(auth_blueprint, url_prefix='/auth')
 socketio = SocketIO(app)
 blockchain = Blockchain()
+s3_client = boto3.client(
+    's3',
+    endpoint_url='https://s3.filebase.com',
+    aws_access_key_id=FILEBASE_ACCESS_KEY,
+    aws_secret_access_key=FILEBASE_SECRET_KEY
+)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -71,8 +81,14 @@ def append_file_extension(uploaded_file, file_path):
 
 def decrypt_file(file_path, file_key):
     encrypted_file = file_path + ".aes"
+
+    # ✅ Fix: Delete existing .aes file if it already exists
+    if os.path.exists(encrypted_file):
+        os.remove(encrypted_file)
+
     os.rename(file_path, encrypted_file)
-    pyAesCrypt.decryptFile(encrypted_file, file_path,  file_key, app.config['BUFFER_SIZE'])
+    pyAesCrypt.decryptFile(encrypted_file, file_path, file_key, app.config['BUFFER_SIZE'])
+
 
 def encrypt_file(file_path, file_key):
     pyAesCrypt.encryptFile(file_path, file_path + ".aes",  file_key, app.config['BUFFER_SIZE'])
@@ -101,10 +117,55 @@ def hash_user_file(file_path, file_key):
     if response.status_code == 200:
         file_hash = response.json()["IpfsHash"]
         print(f"✅ File uploaded to Pinata: {file_hash} (Original: {filename})")
+
+        # ✅ Upload encrypted file to Filebase
+        upload_success = upload_to_filebase(encrypted_file_path, filename + ".aes")
+        if upload_success:
+            print("✅ File also uploaded to Filebase.")
+        else:
+            print("⚠️ Failed to upload to Filebase.")
+
         return file_hash, filename  # Return hash + original filename
+
     else:
         print("❌ Pinata Upload Failed:", response.text)
         return None, None
+
+def upload_to_filebase(filepath, filename):
+    try:
+        with open(filepath, "rb") as f:
+            s3_client.upload_fileobj(f, FILEBASE_BUCKET_NAME, filename)
+        print(f"✅ Uploaded '{filename}' to Filebase bucket.")
+        return True
+    except Exception as e:
+        print(f"❌ Error uploading to Filebase: {e}")
+        return False
+def download_from_filebase(filename, local_path):
+    try:
+        with open(local_path, 'wb') as f:
+            s3_client.download_fileobj(FILEBASE_BUCKET_NAME, filename, f)
+        print(f"✅ Downloaded '{filename}' from Filebase.")
+        return True
+    except Exception as e:
+        print(f"❌ Error downloading from Filebase: {e}")
+        return False
+def verify_cid_exists(cid):
+    gateway_url = f"https://gateway.pinata.cloud/ipfs/{cid}"
+    try:
+        response = requests.head(gateway_url, timeout=10)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
+def is_valid_file_hash(file_hash):
+    ipfs_url = f"https://gateway.pinata.cloud/ipfs/{file_hash}"
+    print(f"[DEBUG] Checking URL: {ipfs_url}")  # <--- ADD THIS
+    try:
+        response = requests.get(ipfs_url, stream=True, timeout=5)
+        print(f"[DEBUG] Status Code: {response.status_code}")  # <--- AND THIS
+        return response.status_code in [200, 302]
+    except requests.exceptions.RequestException as e:
+        print(f"[DEBUG] Error: {e}")
+        return False
 
 def retrieve_from_hash(file_hash, file_key):
     # Pinata Gateway URL
@@ -251,6 +312,8 @@ def approve_request(request_id):
         flash("✅ Request approved!", "success")
     return redirect(url_for('admin_dashboard'))
 
+
+
 @app.route('/reject_request/<int:request_id>')
 def reject_request(request_id):
     if 'username' not in session or session.get('role') != 'admin':
@@ -297,8 +360,8 @@ def add_file():
                 file_key = request.form['file_key']
 
                 try:
-                    hashed_output1 = hash_user_file(file_path, file_key)
-                    index = blockchain.add_file(sender, receiver, hashed_output1)
+                    file_hash, filename = hash_user_file(file_path, file_key)
+                    index = blockchain.add_file(sender, receiver, file_hash)
                 except Exception as err:
                     message = str(err)
                     error_flag = True
@@ -324,10 +387,15 @@ def retrieve_file():
     file_hash = request.form['file_hash']
     file_key = request.form['file_key']
 
+    # ❌ Check if file hash is valid before proceeding
+    if not is_valid_file_hash(file_hash):
+        flash("❌ Invalid file hash. Please enter the correct one.", "danger")
+        return redirect(url_for('download'))
+
     request_status = DownloadRequest.query.filter_by(username=username, file_hash=file_hash).first()
 
     if request_status is None:
-        new_request = DownloadRequest(username=username, file_hash=file_hash, status="Pending", timestamp=datetime.utcnow())
+        new_request = DownloadRequest(username=username, file_hash=file_hash, status="Pending", timestamp=datetime.now(timezone.utc))
         db.session.add(new_request)
         db.session.commit()
         flash("✅ Your download request has been sent to the admin for approval.", "info")
@@ -338,17 +406,15 @@ def retrieve_file():
         return redirect(url_for('download'))
 
     elif request_status.status == "Rejected":
-    # Delete the old rejected request and create a new one
         db.session.delete(request_status)
         db.session.commit()
 
-        new_request = DownloadRequest(username=username, file_hash=file_hash, status="Pending", timestamp=datetime.utcnow())
+        new_request = DownloadRequest(username=username, file_hash=file_hash, status="Pending", timestamp=datetime.now(timezone.utc))
         db.session.add(new_request)
         db.session.commit()
 
         flash("✅ Your new download request has been sent to the admin for approval.", "info")
         return redirect(url_for('download'))
-
 
     file_path = retrieve_from_hash(file_hash, file_key)
     return send_file(file_path, as_attachment=True)

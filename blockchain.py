@@ -112,7 +112,7 @@ class Blockchain:
         try:
             response = requests.get(
                 'https://file-storage-using-blockchain.onrender.com/get_chain', 
-                timeout=15  # ⏳ Added timeout to prevent infinite waiting
+                timeout=5  # ⏳ Added timeout to prevent infinite waiting
             )
             response.raise_for_status()  # ✅ Stop if request fails
 
